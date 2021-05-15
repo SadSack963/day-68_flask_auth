@@ -33,8 +33,28 @@ def home():
     return render_template("index.html")
 
 
-@app.route('/register')
+@app.route('/register', methods=['GET', 'POST'])
 def register():
+    if request.method == 'POST':
+        # Create a user and get the values from the HTML form
+        user = User()
+        user.name = request.form['name']
+        user.email = request.form['email']
+        user.password = request.form['password']
+
+        # Angela's method:
+        # PyCharm complains: Unexpected argument
+        # Apparently it's because of the inclusion of the superclass 'UserMixin' in the class definition
+        # new_user = User(
+        #     email=request.form.get('email'),
+        #     name=request.form.get('name'),
+        #     password=request.form.get('password'),
+        # )
+
+        # Save the user in the database
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('secrets', username=user.name))
     return render_template("register.html")
 
 
@@ -43,9 +63,18 @@ def login():
     return render_template("login.html")
 
 
-@app.route('/secrets')
-def secrets():
-    return render_template("secrets.html")
+# URL is "http://127.0.0.1:5008/secrets/John8"
+@app.route('/secrets/<username>')
+def secrets(username):
+    return render_template("secrets.html", username=username)
+
+
+# # Alternative by Manoj
+# # URL is "http://127.0.0.1:5008/secrets?username=John7"
+# @app.route('/secrets')
+# def secrets():
+#     username = request.args.get('username')
+#     return render_template("secrets.html", username=username)
 
 
 @app.route('/logout')
@@ -53,9 +82,14 @@ def logout():
     pass
 
 
-@app.route('/download')
-def download():
-    pass
+@app.route('/download/<path:filename>')
+def download(filename):
+    # This is a secure way to serve files from a folder, such as static files or uploads.
+    # Uses safe_join() to ensure the path coming from the client is not maliciously crafted
+    # to point outside the specified directory
+    return send_from_directory(
+        directory='static/files', filename=filename, as_attachment=True
+    )
 
 
 if __name__ == "__main__":
