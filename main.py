@@ -40,7 +40,7 @@ def register():
         user = User()
         user.name = request.form['name']
         user.email = request.form['email']
-        user.password = request.form['password']
+        password = request.form['password']
 
         # Angela's method:
         # PyCharm complains: Unexpected argument
@@ -50,6 +50,10 @@ def register():
         #     name=request.form.get('name'),
         #     password=request.form.get('password'),
         # )
+
+        # Salting and Hashing Passwords
+        # https://werkzeug.palletsprojects.com/en/1.0.x/utils/#module-werkzeug.security
+        user.password = generate_password_hash(password, method='pbkdf2:sha256:1000', salt_length=8)
 
         # Save the user in the database
         db.session.add(user)
