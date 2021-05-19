@@ -117,7 +117,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        # Log in and authenticate user after adding details to database.
+        # Log in and authenticate the user after adding details to database.
         login_user(user)
 
         return redirect(url_for('secrets', username=user.name))
@@ -141,6 +141,7 @@ def login():
         if user:
             # Check the the hashed password in the database against the input password
             if check_password_hash(pwhash=user.password, password=password):
+                # Log in and authenticate the user
                 login_user(user)
 
                 # Flash Messages will show on the page that is redirected to (redirect only, not render_template)
@@ -176,18 +177,37 @@ def logout():
     return redirect(url_for('home'))
 
 
-@app.route('/download/<path:filename>')
+# @app.route('/download/<path:filename>')
+# @login_required
+# def download(filename):
+#     # This is a secure way to serve files from a folder, such as static files or uploads.
+#     # Uses safe_join() to ensure the path coming from the client is not maliciously crafted
+#     # to point outside the specified directory
+#     # Note that this method does not prevent anyone with the link to the file from downloading it.
+#     return send_from_directory(
+#         directory='static/files',
+#         filename=filename,
+#         as_attachment=True,
+#     )
+
+
+# This is much more secure than the above method.
+# The link never displays a URL to the file, and the user cannot access /download because there is no GET method
+#     http://192.168.56.101:5008/download - Method Not Allowed
+#     http://192.168.56.101:5008/download/cheat_sheet.pdf - Not Found
+@app.route('/download', methods=['POST'])
 @login_required
-def download(filename):
+def download():
+    filename = request.form['filename']
     # This is a secure way to serve files from a folder, such as static files or uploads.
     # Uses safe_join() to ensure the path coming from the client is not maliciously crafted
     # to point outside the specified directory
     return send_from_directory(
         directory='static/files',
         filename=filename,
-        as_attachment=True
+        as_attachment=True,
     )
 
 
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=5008, debug=True)
+    app.run(host='192.168.56.101', port=5008, debug=True)  # Using VBox Host Only IP
