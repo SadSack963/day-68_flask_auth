@@ -15,7 +15,7 @@ app.config['SECRET_KEY'] = API_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)  # Instantiate the database passing the app
+db = SQLAlchemy(app)  # Instantiate the database passing the app to it
 
 # Flask-Login
 # https://flask-login.readthedocs.io/en/latest/
@@ -37,6 +37,8 @@ class User(UserMixin, db.Model):
     To make implementing the user class easier, we inherit from UserMixin, which provides
     default implementations for all of these properties and methods.
     These are used internally by Flask Login to keep track of users and their state
+
+    You can access these using, for example, "current_user.is_authenticated"
 
     is_authenticated
         This property should return True if the user is authenticated, i.e. they have provided
@@ -146,12 +148,11 @@ def login():
         # Make sure the user exists
         try:
             user = User.query.filter_by(email=email).first()
-            print(f"Login user {user.email}")
         except orm.exc.NoResultFound:
             # SQLAlchemy.orm exception
             flash(f"User {email} not found!", 'error')
             flash(f"Try again.")
-            print(f"User {email} not found!")
+            print(f"SQLAlchemy.orm exception: User {email} not found!")
             return render_template("login.html")
 
         if user:
@@ -178,6 +179,12 @@ def login():
             else:
                 flash(f'Incorrect Password for {email}', 'error')
                 flash(f"Try again.")
+                return render_template("login.html")
+        else:
+            flash(f"User {email} not found!", 'error')
+            flash(f"Try again.")
+            print(f"User {email} not found!")
+            return render_template("login.html")
 
     return render_template("login.html")
 
