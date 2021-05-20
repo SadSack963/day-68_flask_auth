@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 import os
 from sqlalchemy import orm
+from random import randint
 
 API_KEY = 'any-secret-key-you-choose'
 DB_URL = 'sqlite:///database/users.db'
@@ -81,6 +82,10 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+#   =======================================
+#                  ROUTES
+#   =======================================
+
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -94,6 +99,12 @@ def register():
         user.name = request.form['name']
         user.email = request.form['email']
         password = request.form['password']
+
+        # Check if the email is already registered
+        if User.query.filter_by(email=user.email).first():
+            flash(f"User {user.email} already exists!", 'info')
+            flash("Log in instead.")
+            return render_template("login.html")
 
         # Salting and Hashing Passwords
         # https://werkzeug.palletsprojects.com/en/1.0.x/utils/#module-werkzeug.security
@@ -111,7 +122,8 @@ def register():
         #  |   blake2b          |                 |
         #  |   blake2s          |                 |
         #    * DO NOT USE - vulnerable to attack
-        user.password = generate_password_hash(password, method='pbkdf2:sha3_512:100000', salt_length=8)
+        salt_length = randint(16, 32)
+        user.password = generate_password_hash(password, method='pbkdf2:sha3_512:100000', salt_length=salt_length)
 
         # Save the user in the database
         db.session.add(user)
@@ -119,7 +131,7 @@ def register():
 
         # Log in and authenticate the user after adding details to database.
         login_user(user)
-
+        flash('Logged in successfully.', 'info')
         return redirect(url_for('secrets', username=user.name))
     return render_template("register.html")
 
@@ -131,12 +143,16 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
+        # Make sure the user exists
         try:
             user = User.query.filter_by(email=email).first()
+            print(f"Login user {user.email}")
         except orm.exc.NoResultFound:
             # SQLAlchemy.orm exception
-            user = None
-            print(f"User not found: {email}")
+            flash(f"User {email} not found!", 'error')
+            flash(f"Try again.")
+            print(f"User {email} not found!")
+            return render_template("login.html")
 
         if user:
             # Check the the hashed password in the database against the input password
@@ -160,9 +176,11 @@ def login():
 
                 return redirect(url_for('secrets', username=user.name))
             else:
-                flash('Log in failed.', 'error')
+                flash(f'Incorrect Password for {email}', 'error')
+                flash(f"Try again.")
 
     return render_template("login.html")
+
 
 @app.route('/secrets')
 @login_required
@@ -210,4 +228,8 @@ def download():
 
 
 if __name__ == "__main__":
-    app.run(host='192.168.56.101', port=5008, debug=True)  # Using VBox Host Only IP
+    # Localhost
+    app.run(host='127.0.0.1', port=5008, debug=True)
+
+    # # For VBox Host Only
+    # app.run(host='192.168.56.101', port=5008, debug=True)  # Using VBox Host Only IP

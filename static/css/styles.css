@@ -195,11 +195,22 @@ input:focus {
   text-decoration: underline;
   cursor: pointer;
   font-size: 1.5em;
-  font-family: serif;
+  font-family: sans serif;
 }
 .link-button:focus {
   outline: none;
 }
 .link-button:active {
   color:red;
+}
+
+/* Flash message categories */
+.message {
+  color: green;
+}
+.info {
+  color: cyan;
+}
+.error {
+  color: red;
 }
